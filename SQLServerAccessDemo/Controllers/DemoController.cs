@@ -1,6 +1,7 @@
 ﻿using DBAccess;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -11,9 +12,14 @@ namespace SQLServerAccessDemo.Controllers
 {
     public class DemoController : Controller
     {
-        static readonly int pageRow = 100; // 一頁 Take 筆數
+        // 一頁 Take 筆數
+        private static readonly int pageRow = 30; 
+        // 預設連線位置 (按鈕 [取得資料庫] 可變動)
+        private string connectString = ConfigurationManager.AppSettings["connectionString"];
+
         public ActionResult Index()
         {
+            ViewBag.connectString = this.connectString;
             return View();
         }
 
@@ -42,12 +48,12 @@ namespace SQLServerAccessDemo.Controllers
 
                     ViewBag.TotalPage = totalPage;
                     ViewBag.TotalRow = dt.Rows.Count;
+                    ViewBag.NowPage = page?? 1; // 現在的頁數 null:為第一頁
 
                 }
                 DataTable tableNew = dt;
                 if (enumerableDt.Any()) // 先確認有DataRow 否則會Exception
                     tableNew = enumerableDt.CopyToDataTable();
-
 
 
                 return View(tableNew);
@@ -64,9 +70,8 @@ namespace SQLServerAccessDemo.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Result(PostResource resource)
         {
-
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(resource.TimeOut);
+            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString,resource.TimeOut);
 
             // *** 步驟(2-1) 建立SQL ParameterBuilder 
             var builder = new SQLParameterBuilder();
@@ -160,7 +165,7 @@ namespace SQLServerAccessDemo.Controllers
         public JsonResult GetDataBaseList()
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB();
+            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString);
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             var ds = db.Excute(
                 "SELECT name FROM master.dbo.sysdatabases WHERE dbid > 4 ORDER BY name",
@@ -176,14 +181,14 @@ namespace SQLServerAccessDemo.Controllers
 
 
         /// <summary>
-        /// 取得View、SP列表
+        /// 取得Table、View、SP列表
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public JsonResult GetTableViewAndSPList(string dbName)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB();
+            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString);
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             var dsTable = db.Excute(
                 $@"SELECT (TABLE_NAME) AS name FROM
@@ -207,7 +212,7 @@ namespace SQLServerAccessDemo.Controllers
                 null
             );
 
-
+            // *** 步驟(4) 轉成List
             var viewList = dsView.Tables[0].ToList<Names>();
             var spList = dsSP.Tables[0].ToList<Names>();
             var tableList = dsTable.Tables[0].ToList<Names>();
@@ -230,7 +235,7 @@ namespace SQLServerAccessDemo.Controllers
         public JsonResult GetSpNeedParameters(string dbName, string spName)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB();
+            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString);
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             var ds = db.Excute(
                 $@" SELECT 
@@ -252,6 +257,7 @@ namespace SQLServerAccessDemo.Controllers
                  null
             );
 
+            // *** 步驟(4) 轉成List
             var pList = ds.Tables[0].ToList<ParameterAndType>()
                         .Where(p => p.Type != "sysname").ToList(); // 不需要sysname
 
@@ -268,14 +274,14 @@ namespace SQLServerAccessDemo.Controllers
         public ActionResult SPOrViewCodes(string dbName, string spOrViewName, string type)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB();
+            IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString);
 
             // *** 步驟(2-1) 建立SQL ParameterBuilder 
             var builder = new SQLParameterBuilder();
+            // *** 步驟(2-2) Add Input 或 Output 參數
             builder.Add_Input_Parameter("@name", spOrViewName, SqlDbType.VarChar);
             builder.Add_Input_Parameter("@type", type, SqlDbType.VarChar);
-
-            // *** 步驟(2-2) Add Input 或 Output 參數
+            // *** 步驟(2-3) 將builder 轉成 SqlParameter 陣列
             SqlParameter[] pArray = builder.ToArray();
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             var ds = db.Excute(

@@ -55,7 +55,6 @@
     <Compile Include="Mapper\TheMapper.cs" />
     <Compile Include="Mapper\MapperSQLExtension.cs" />
     <Compile Include="Factorys\SQLParameterBuilder.cs" />
-    <Compile Include="Bags.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\SQLServerDriver.cs" />
     <Compile Include="DbEngineAdapter.cs" />

@@ -15,20 +15,28 @@ namespace DBAccess.Core
     internal sealed class SQLServerDriver : IDbDriver
     {
         /// <summary>
+        /// 連線位置
+        /// </summary>
+        public string ConnectString { get; set; }
+
+        /// <summary>
         /// 逾時時間 (秒)
         /// </summary>
         public int TimeOut { get; set; }
 
 
         #region -------- 封裝資料 -----------
-        private SqlConnection _connection;
-        private SqlConnection Connection
+
+        private SqlConnection _connection = null;
+        public SqlConnection Connection
         {
             get
             {
                 //初始化Connection
-                string connectionString = ConfigurationManager.AppSettings["connectionString"];
-                _connection = new SqlConnection(connectionString);
+                if (_connection == null)
+                {
+                    _connection = new SqlConnection(ConnectString);
+                }
                 return _connection; 
             }
             set
@@ -36,6 +44,8 @@ namespace DBAccess.Core
                 _connection = value;
             }
         }
+
+
         //開啟 Connection
         private void Open() { _connection.Open(); }
         //關閉 Connection

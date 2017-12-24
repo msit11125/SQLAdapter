@@ -9,40 +9,9 @@
     <link href="~/Content/bootstrap-select.css" rel="stylesheet" />
     <link rel="shortcut icon" type="image/ico" href="~/Content/screen-and-keyboard-16.png"  />
     <script src="~/Scripts/modernizr-2.6.2.js"></script>
-    <style>
-        body, body *{
-            font-family: 'Microsoft JhengHei';
-        }
-        .btn {
-            border-radius: 0px 0px;
-        }
-        .btn:hover{
-            box-shadow: 0 6px 6px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
-        }
-        .customSelect{
-            width:auto!important;
-            font-size: 24px;
-            color: #555;
-            background-color: #fff;
-            border: 1px solid #ccc;
-        }
-        .customInputNum{
-            text-align:center;
-            width:8%;
-            font-size: 24px;
-            color: #555;
-            background-color: #fff;
-            border: 1px solid #ccc;
-        }
+    @RenderSection("css", false)
 
-        .navbar-inverse{
-            background-color:#2a4286;
-            border-color: #97aef1;
-        }
-        .navbar-inverse .navbar-brand{
-            color:#fff;
-        }
-    </style>
+    
 </head>
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">

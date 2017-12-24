@@ -14,6 +14,10 @@ namespace DBAccess
     public interface IDbDriver
     {
 
+        /// <summary>
+        /// 連線位置
+        /// </summary>
+        string ConnectString { get; set; }
 
         /// <summary>
         /// 逾時時間

@@ -2,37 +2,78 @@
     ViewBag.Title = "Index";
 }
 
+@section css{
+    <style>
+        body, body * {
+            font-family: 'Microsoft JhengHei'
+        }
+        .btn {
+            border-radius: 0px 0px
+        }
+            .btn:hover {
+                box-shadow: 0 6px 6px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19)
+            }
+        .customSelect {
+            width: auto !important;
+            font-size: 24px;
+            color: #555;
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+        .customInputNum {
+            text-align: center;
+            width: 8%;
+            font-size: 24px;
+            color: #555;
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+        .navbar-inverse {
+            background-color: #2a4286;
+            border-color: #97aef1;
+        }
+            .navbar-inverse .navbar-brand {
+                color: #fff;
+            }
+    </style>
+}
+
 @using (Html.BeginForm("Result", "Demo", FormMethod.Post, new { @id = "DbPostForm" }))
 {
     @Html.AntiForgeryToken()
-
+    <div>
+        <span style="color:#3a87ad;">&nbsp;連線位置：</span>
+        <input type="text" id="connectString" class="customInputNum" style="color:#3a87ad;width:60%;font-size:16px;text-align:left;border:none;" readonly
+               value="@ViewBag.connectString" />
+    </div>
 
     <div class="alert alert-info" style="padding:10px;">
         <input type="button" class="btn btn-primary" id="searchDbList" value="取得資料庫列表" />
-        <span style="font-size:20px">@Html.Raw("　DataBase: &nbsp;")</span>
+        <span>@Html.Raw("　DataBase: &nbsp;")</span>
         <select id="selectDB" class="customSelect" data-live-search="true">
             <option>master</option>
         </select>
+        <span id="waitGettingDB" style="color:#222f53;display:none;"><b>&nbsp; 取得中...</b></span>
     </div>
 
-        <div>
-            <span style="font-size:20px">@Html.Raw("資料表: &nbsp;")</span>
-            <select id="selectTable" class="customSelect" data-live-search="true">
-                <option>尚未按下取得</option>
-            </select>
-            <br /><br />
-            <span style="font-size:20px">@Html.Raw("檢視表: &nbsp;")</span>
-            <select id="selectView" class="customSelect" data-live-search="true">
-                <option>尚未按下取得</option>
-            </select>
-            <input type="button" class="btn btn-default btn-sm" style="display:none" value="取得Code" id="getViewCode" />
-            <br /><br />
-            <span style="font-size:20px">@Html.Raw("預存程序: &nbsp;")</span>
-            <select id="selectStoreProcedure" class="customSelect" data-live-search="true">
-                <option>尚未按下取得</option>
-            </select>
-            <input type="button" class="btn btn-default btn-sm" style="display:none" value="取得Code" id="getSPCode" />
-        </div>
+    <div>
+        <span style="font-size:20px">@Html.Raw("資料表: &nbsp;")</span>
+        <select id="selectTable" class="customSelect" data-live-search="true">
+            <option>尚未按下取得</option>
+        </select>
+        <br /><br />
+        <span style="font-size:20px">@Html.Raw("檢視表: &nbsp;")</span>
+        <select id="selectView" class="customSelect" data-live-search="true">
+            <option>尚未按下取得</option>
+        </select>
+        <input type="button" class="btn btn-default btn-sm" style="display:none" value="取得Code" id="getViewCode" />
+        <br /><br />
+        <span style="font-size:20px">@Html.Raw("預存程序: &nbsp;")</span>
+        <select id="selectStoreProcedure" class="customSelect" data-live-search="true">
+            <option>尚未按下取得</option>
+        </select>
+        <input type="button" class="btn btn-default btn-sm" style="display:none" value="取得Code" id="getSPCode" />
+    </div>
         <hr />
 
 
@@ -43,27 +84,28 @@
             <option value="512">TableDirect</option>
         </select>
 
-        <span>&nbsp;TOP：</span><input type="number" id="topSQL" value="200" class="customInputNum" />
-        <hr />
-
-        <h4>逾時時間</h4>
-
+        <span>&nbsp;逾時時間</span>
         <input type="number" name="TimeOut" value="5" class="customInputNum" /><span>秒</span>
-        <hr />
-        <h4>SQL指令</h4>
-        <textarea type="text" name="Sql" placeholder="輸入完整SQL敘述或預存程序名稱" style="font-size:20px;resize: none;overflow:auto;width: 100%;box-sizing: border-box;height: 250px;" required></textarea>
+                <hr />
 
-        <hr />
-
-        <h4>SQL Parameter參數 　<input id="addParameter" type="button" value="+" /> <input id="removeParameter" type="button" value="-" /> </h4>
-        <h5>輸入方向　　參數名稱　　　　　　　Value　　　　　　　　DB型別　　　Size　　　　　　　　　Precision　　　　　　　Scale</h5>
-
-        <div id="paraDiv"></div>
+                <span>&nbsp;TOP：</span><input type="number" id="topSQL" value="200" class="customInputNum" />
+                <hr />
 
 
-        <hr />
-        <input type="button" id="btnSubmit" class="btn btn-success btn-lg" value="查詢和執行 (Submit)" width="15%" />
-        <span id="resultMsg"></span>
+                <h4>SQL指令</h4>
+                <textarea type="text" name="Sql" placeholder="輸入完整SQL敘述或預存程序名稱" style="font-size:20px;resize: none;overflow:auto;width: 100%;box-sizing: border-box;height: 250px;" required></textarea>
+
+                <hr />
+
+                <h4>SQL Parameter參數 　<input id="addParameter" type="button" value="+" /> <input id="removeParameter" type="button" value="-" /> </h4>
+                <h5>輸入方向　　參數名稱　　　　　　　Value　　　　　　　　DB型別　　　Size　　　　　　　　　Precision　　　　　　　Scale</h5>
+
+                <div id="paraDiv"></div>
+
+
+                <hr />
+                <input type="button" id="btnSubmit" class="btn btn-success btn-lg" value="查詢和執行 (Submit)" width="15%" />
+                <span id="resultMsg"></span>
 
 
 }
@@ -116,7 +158,7 @@
                       </div>                                                                                             \
                     '
             var paraDiv = $(html);
-            
+
             return paraDiv;
         };
 
@@ -175,7 +217,9 @@
 
                 //判斷是Text 增加Use DB敘述
                 if ($("select[name='CommandType']").val() == 1) {
-                    $("textarea[name='Sql']").val("USE " + $("#selectDB").val() + " \n" + sql);
+                    var textareaSQL = $("textarea[name='Sql']");
+                    if (textareaSQL.val().toUpperCase().indexOf("USE ") == -1) //沒有加過USE
+                       $("textarea[name='Sql']").val("USE " + $("#selectDB").val() + " \n" + sql);
                 };
 
 
@@ -212,9 +256,12 @@
                 });
             })
 
-            // 取得資料庫列表: 獲得DB Select Option選單
+            // 按下 取得資料庫列表: 獲得DB Select Option選單
             $("#searchDbList").on('click', function () {
-                $("#getViewCode").show(); $("#getSPCode").show();
+                $("#waitGettingDB").show(); //顯示 等待中...
+
+                $("#getViewCode").show(); //顯示 取得Code
+                $("#getSPCode").show(); //顯示 取得Code
 
                 var selectDB = $("#selectDB");
 
@@ -222,6 +269,7 @@
                     type: "Post",
                     url: '@Url.Action("GetDataBaseList","Demo")',
                     data: {
+                        connectString: $("#connectString").val(),
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
                     success: function (data) {
@@ -241,9 +289,12 @@
                         selectDB.selectpicker('refresh');
 
                         selectDB.trigger('change');
+
+                        $("#waitGettingDB").hide(); //隱藏 等待中...
                     },
                     error: function (xhr) {
                         $("#resultMsg").html("<span class='text-danger'>" + JSON.parse(xhr.responseText).Error + "</span>");
+                        $("#waitGettingDB").hide(); //隱藏 等待中...
                     }
                 });
             });

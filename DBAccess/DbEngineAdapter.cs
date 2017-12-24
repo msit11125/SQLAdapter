@@ -24,14 +24,14 @@ namespace DBAccess
         /// <summary>
         /// 建立SQL Server 連線DB
         /// </summary>
-        /// <param name="connectionMode">連線模式</param>
-        /// <param name="connectDB">連線DB</param>
+        /// <param name="connectString">連線位置</param>
         /// <param name="timeOut">逾時時間(預設120秒)</param>
         /// <returns></returns>
-        public static IDbEngineAdapter CreateSQLServerDB(int timeOut = 120)
+        public static IDbEngineAdapter CreateSQLServerDB(string connectString ,int timeOut = 120)
         {
             var driver = SQLFactory.CreateDriver("SQLSERVER");
             driver.TimeOut = timeOut;
+            driver.ConnectString = connectString;
             return new DbEngineAdapter(driver);
         }
 
