@@ -168,13 +168,14 @@ namespace SQLServerAccessDemo.Controllers
             IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString);
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             var ds = db.Excute(
-                "SELECT name FROM master.dbo.sysdatabases WHERE dbid > 4 ORDER BY name",
+                @"
+                  SELECT name FROM master.dbo.sysdatabases 
+                  WHERE name not in ('master','tempdb','model','msdb')
+                ",  /* 依照系統DB做排除 'master','tempdb','model','msdb' */
                 CommandType.Text,
                 null
             );
             var nameList = ds.Tables[0].ToList<Names>();
-
-
 
             return Json(nameList);
         }
@@ -200,17 +201,23 @@ namespace SQLServerAccessDemo.Controllers
             );
 
             var dsView = db.Excute(
-                "SELECT (TABLE_NAME) AS name FROM " + dbName + ".INFORMATION_SCHEMA.VIEWS ORDER BY TABLE_NAME",
+                $"SELECT (TABLE_NAME) AS name FROM {dbName}.INFORMATION_SCHEMA.VIEWS ORDER BY TABLE_NAME",
                 CommandType.Text,
                 null
             );
 
 
             var dsSP = db.Excute(
-                "SELECT (SPECIFIC_NAME) AS name FROM " + dbName + ".INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE = 'PROCEDURE' ORDER BY SPECIFIC_NAME",
+                $@"
+                    SELECT (SPECIFIC_NAME) as Name
+                    FROM {dbName}.INFORMATION_SCHEMA.ROUTINES
+                    WHERE ROUTINE_TYPE = 'PROCEDURE' AND SPECIFIC_NAME Not Like 'dt_%'
+                    ORDER BY SPECIFIC_NAME
+                ",
                 CommandType.Text,
                 null
             );
+
 
             // *** 步驟(4) 轉成List
             var viewList = dsView.Tables[0].ToList<Names>();
@@ -236,31 +243,33 @@ namespace SQLServerAccessDemo.Controllers
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
             IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString);
+            // *** 步驟(2-1) 建立SQL ParameterBuilder 
+            var builder = new SQLParameterBuilder();
+            builder.Add_Input_Parameter("@spName", spName, SqlDbType.VarChar);
+
+            // *** 步驟(2-2) Add Input 或 Output 參數
+            SqlParameter[] pArray = builder.ToArray();
+
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             var ds = db.Excute(
-                $@" SELECT 
-                        p.name AS Parameter,        
-                        t.name AS Type,
-                        p.is_output AS OutPut,
-	                    p.max_length as Size,
-	                    p.precision as Precision,
-	                    p.scale as Scale
-                    FROM {dbName}.sys.procedures sp
-                    JOIN {dbName}.sys.parameters p 
-                        ON sp.object_id = p.object_id
-                    JOIN {dbName}.sys.types t
-                        ON p.system_type_id = t.system_type_id
-                    WHERE sp.name = '{spName}'
-                    ORDER BY p.name
-                  ",
-                CommandType.Text,
-                 null
-            );
+                   $@" 
+                    SELECT 
+                        PARAMETER_NAME AS Parameter,
+                        DATA_TYPE AS Type,
+                        (case when PARAMETER_MODE='IN' then 0 when PARAMETER_MODE='INOUT' then 1 end) AS OutPut,   
+                        ISNULL(CHARACTER_MAXIMUM_LENGTH,0) AS Size,
+                        ISNULL(NUMERIC_PRECISION,0) AS Precision,
+                        ISNULL(NUMERIC_SCALE,0) AS Scale
+                    FROM {dbName}.INFORMATION_SCHEMA.PARAMETERS
+                    WHERE SPECIFIC_NAME = @spName
+                    order by OutPut,Parameter
+                    ",
+                   CommandType.Text,
+                   pArray
+               );
 
             // *** 步驟(4) 轉成List
-            var pList = ds.Tables[0].ToList<ParameterAndType>()
-                        .Where(p => p.Type != "sysname").ToList(); // 不需要sysname
-
+            var pList = ds.Tables[0].ToList<ParameterAndType>();
 
             return Json(pList);
         }
@@ -271,7 +280,7 @@ namespace SQLServerAccessDemo.Controllers
         /// </summary>
         /// <param name="Type"> P: StoreProcedure  V: View </param>
         /// <returns></returns>
-        public ActionResult SPOrViewCodes(string dbName, string spOrViewName, string type)
+        public ActionResult SPOrViewCodes(string dbName, string spOrViewName, char type)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
             IDbEngineAdapter db = DbEngineAdapter.CreateSQLServerDB(connectString);
@@ -284,18 +293,33 @@ namespace SQLServerAccessDemo.Controllers
             // *** 步驟(2-3) 將builder 轉成 SqlParameter 陣列
             SqlParameter[] pArray = builder.ToArray();
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
-            var ds = db.Excute(
-                $@" SELECT *,definition 
-                    FROM {dbName}.sys.sql_modules 
-                    WHERE object_id = (
-	                    SELECT object_id
-	                    FROM {dbName}.sys.objects 
-	                    WHERE type=@type AND name= @name
-                    )
-                  ",
-                CommandType.Text,
-                 pArray
-            );
+            DataSet ds = null;
+            switch (type)
+            {
+                case 'P': //SP
+                    ds = db.Excute(
+                        $@" 
+                             SELECT ROUTINE_DEFINITION AS definition
+                             FROM {dbName}.INFORMATION_SCHEMA.ROUTINES
+                             WHERE SPECIFIC_NAME = @name
+                         ",
+                        CommandType.Text,
+                         pArray
+                    );
+
+                    break;
+                case 'V': //SP
+                    ds = db.Excute(
+                        $@" 
+                             SELECT VIEW_DEFINITION AS definition
+                             FROM {dbName}.INFORMATION_SCHEMA.VIEWS
+                             WHERE TABLE_NAME = @name
+                         ",
+                        CommandType.Text,
+                         pArray
+                    );
+                    break;
+            }
             string codes = "<span style='color:red'>查無資料</span>";
             if (ds != null && ds.Tables[0].Rows.Count > 0)
             {

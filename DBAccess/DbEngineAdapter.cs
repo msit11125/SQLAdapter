@@ -29,7 +29,7 @@ namespace DBAccess
         /// <returns></returns>
         public static IDbEngineAdapter CreateSQLServerDB(string connectString ,int timeOut = 120)
         {
-            var driver = SQLFactory.CreateDriver("SQLSERVER");
+            var driver = (IDbDriver)SQLFactory.CreateDriver("SQLSERVER", "singleton");
             driver.TimeOut = timeOut;
             driver.ConnectString = connectString;
             return new DbEngineAdapter(driver);
