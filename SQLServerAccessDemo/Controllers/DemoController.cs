@@ -209,9 +209,9 @@ namespace SQLServerAccessDemo.Controllers
 
             var dsSP = db.Excute(
                 $@"
-                    SELECT (SPECIFIC_NAME) as Name
+                    SELECT (Routine_Name) as Name
                     FROM {dbName}.INFORMATION_SCHEMA.ROUTINES
-                    WHERE ROUTINE_TYPE = 'PROCEDURE' AND SPECIFIC_NAME Not Like 'dt_%'
+                    WHERE ROUTINE_TYPE = 'PROCEDURE' AND Left(Routine_Name, 3) NOT IN ('sp_', 'xp_', 'ms_')
                     ORDER BY SPECIFIC_NAME
                 ",
                 CommandType.Text,
