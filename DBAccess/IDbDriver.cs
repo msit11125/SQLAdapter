@@ -1,53 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DBAccess
 {
-    /// <summary>
-    /// 建立連線DB方式介面
-    /// </summary>
     public interface IDbDriver
     {
-
-        /// <summary>
-        /// 連線位置
-        /// </summary>
         string ConnectString { get; set; }
-
-        /// <summary>
-        /// 逾時時間
-        /// </summary>
         int TimeOut { get; set; }
+        IDbConnection Connection { get; set; }
+        IDbCommand Command { get; set; }
 
-
+        //開啟/關閉 Connection
+        void Open() ;
+        void Close();
         /// <summary>
-        /// 執行使用 SqlDataAdapter
+        /// 使用 DataAdapter 存取資料庫
         /// </summary>
-        /// <param name="sql">sql敘述</param>
-        /// <param name="type">CommandType類型</param>
-        /// <param name="parameters">陣列參數</param>
         /// <returns>DataSet</returns>
-        DataSet ExcuteSql_UseAdapter(string sql, CommandType type, IEnumerable<SqlParameter> parameters);
+        DataSet Excute();
         /// <summary>
-        /// 執行使用 ExecuteNonQuery
+        /// 使用 ExcuteNonQuery 存取資料庫
         /// </summary>
-        /// <param name="sql">sql敘述</param>
-        /// <param name="type">CommandType類型</param>
-        /// <param name="parameters">陣列參數</param>
         /// <returns>int</returns>
-        int ExcuteSql_NonQuery(string sql, CommandType type, IEnumerable<SqlParameter> parameters);
+        int ExcuteNonQuery();
         /// <summary>
-        /// 執行使用 ExecuteReader
+        /// 執行使用 ExcuteReader 存取資料庫，
+        /// 注意: 要手動使用 dr.Close(); 關閉原先的Connection
         /// </summary>
-        /// <param name="sql">sql敘述</param>
-        /// <param name="type">CommandType類型</param>
-        /// <param name="parameters">陣列參數</param>
         /// <returns>IDataReader</returns>
-        IDataReader ExcuteReader(string sql, CommandType type, IEnumerable<SqlParameter> parameters);
+        IDataReader ExcuteReader();
+
     }
 }

@@ -50,7 +50,7 @@
   <ItemGroup>
     <Compile Include="Factorys\SQLDriverFactory.cs" />
     <Compile Include="IDbDriver.cs" />
-    <Compile Include="IDbEngineAdapter.cs" />
+    <Compile Include="DbAbstractDriver.cs" />
     <Compile Include="Mapper\DataExtension.cs" />
     <Compile Include="Mapper\TheMapper.cs" />
     <Compile Include="Mapper\MapperSQLExtension.cs" />
