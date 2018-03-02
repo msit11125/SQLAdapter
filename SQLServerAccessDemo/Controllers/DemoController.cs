@@ -71,7 +71,7 @@ namespace SQLServerAccessDemo.Controllers
         public ActionResult Result(PostResource resource)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = new DbEngineAdapter(connectString,resource.TimeOut);
+            DbEngineAdapter db = new DbEngineAdapter(connectString,resource.TimeOut);
             // *** 步驟(2-1) 建立SQL ParameterBuilder 
             var builder = new SQLParameterBuilder();
 
@@ -102,11 +102,13 @@ namespace SQLServerAccessDemo.Controllers
             SqlParameter[] pArrar = builder.ToArray();
 
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
+            db.OpenConn(); //開啟連線
             var ds = db.Excute(
                 resource.Sql,
                 resource.CommandType,
                 pArrar
             );
+            db.CloseConn(); //關閉連線
 
             // *** 步驟(4) (非必要) 可將SqlParameter轉Class
             //                     或是DataSet內的Table轉List<>
@@ -164,8 +166,9 @@ namespace SQLServerAccessDemo.Controllers
         public JsonResult GetDataBaseList()
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = new DbEngineAdapter(connectString);
+            DbEngineAdapter db = new DbEngineAdapter(connectString);
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
+            db.OpenConn();
             var ds = db.Excute(
                 @"
                   SELECT name FROM master.dbo.sysdatabases 
@@ -174,6 +177,8 @@ namespace SQLServerAccessDemo.Controllers
                 CommandType.Text,
                 null
             );
+            db.CloseConn();
+
             var nameList = ds.Tables[0].ToList<Names>();
 
             return Json(nameList);
@@ -188,7 +193,7 @@ namespace SQLServerAccessDemo.Controllers
         public JsonResult GetTableViewAndSPList(string dbName)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = new DbEngineAdapter(connectString);
+            DbEngineAdapter db = new DbEngineAdapter(connectString);
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             var dsTable = db.Excute(
                 $@"SELECT (TABLE_NAME) AS name FROM
@@ -199,6 +204,7 @@ namespace SQLServerAccessDemo.Controllers
                 null
             );
 
+            db.OpenConn();
             var dsView = db.Excute(
                 $"SELECT (TABLE_NAME) AS name FROM {dbName}.INFORMATION_SCHEMA.VIEWS ORDER BY TABLE_NAME",
                 CommandType.Text,
@@ -216,6 +222,7 @@ namespace SQLServerAccessDemo.Controllers
                 CommandType.Text,
                 null
             );
+            db.CloseConn();
 
 
             // *** 步驟(4) 轉成List
@@ -241,7 +248,7 @@ namespace SQLServerAccessDemo.Controllers
         public JsonResult GetSpNeedParameters(string dbName, string spName)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = new DbEngineAdapter(connectString);
+            DbEngineAdapter db = new DbEngineAdapter(connectString);
             // *** 步驟(2-1) 建立SQL ParameterBuilder 
             var builder = new SQLParameterBuilder();
             builder.Add_Input_Parameter("@spName", spName, SqlDbType.VarChar);
@@ -250,6 +257,7 @@ namespace SQLServerAccessDemo.Controllers
             SqlParameter[] pArray = builder.ToArray();
 
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
+            db.OpenConn();
             var ds = db.Excute(
                    $@" 
                     SELECT 
@@ -266,6 +274,7 @@ namespace SQLServerAccessDemo.Controllers
                    CommandType.Text,
                    pArray
                );
+            db.CloseConn();
 
             // *** 步驟(4) 轉成List
             var pList = ds.Tables[0].ToList<ParameterAndType>();
@@ -282,7 +291,7 @@ namespace SQLServerAccessDemo.Controllers
         public ActionResult SPOrViewCodes(string dbName, string spOrViewName, char type)
         {
             // *** 步驟(1) 建立SQL Server 的 Adapter
-            IDbEngineAdapter db = new DbEngineAdapter(connectString);
+            DbEngineAdapter db = new DbEngineAdapter(connectString);
 
             // *** 步驟(2-1) 建立SQL ParameterBuilder 
             var builder = new SQLParameterBuilder();
@@ -293,6 +302,7 @@ namespace SQLServerAccessDemo.Controllers
             SqlParameter[] pArray = builder.ToArray();
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             DataSet ds = null;
+            db.OpenConn();
             switch (type)
             {
                 case 'P': //SP
@@ -319,6 +329,8 @@ namespace SQLServerAccessDemo.Controllers
                     );
                     break;
             }
+            db.CloseConn();
+
             string codes = "<span style='color:red'>查無資料</span>";
             if (ds != null && ds.Tables[0].Rows.Count > 0)
             {

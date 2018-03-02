@@ -9,26 +9,14 @@ using System.Reflection;
 
 namespace DBAccess
 {
-
-    public interface IDbEngineAdapter
-    {
-        void BeginTransaction();
-        void Commit();
-        DataSet Excute(string sql, CommandType commandType, SqlParameter[] parameters);
-        int ExcuteNonQuery(string sql, CommandType commandType, SqlParameter[] parameters);
-        IDataReader ExcuteReader(string sql, CommandType commandType, SqlParameter[] parameters);
-    }
-
-
-
     /// <summary>
     /// 用來建立與SQL連線的元件工具
     /// </summary>
-    public class DbEngineAdapter : IDbEngineAdapter
+    public class DbEngineAdapter : IDisposable
     {
         // 讀取 xml 並建立工廠
         private static SQLAccessFactory SQLFactory = new SQLAccessFactory(
-            Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(DbEngineAdapter)).CodeBase),"DbDrivers.xml")
+            Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(DbEngineAdapter)).CodeBase), "DbDrivers.xml")
             );
 
         private IDbDriver _driver;  // 連線的元件 (SQLSERVER or ORACLE or SQLLITE...)
@@ -49,16 +37,23 @@ namespace DBAccess
         }
 
 
-        public void BeginTransaction()
+        public void OpenConn()
         {
             _driver.Open();
+        }
+        public void CloseConn()
+        {
+            _driver.Close();
+        }
+
+        public void BeginTransaction()
+        {
             _driver.Command.Transaction = _tran = _driver.Connection.BeginTransaction();
         }
         public void Commit()
         {
             _tran.Commit();
             _tran.Dispose();
-            ClearAndCloseDriver();
             _tran = null;
         }
 
@@ -83,7 +78,6 @@ namespace DBAccess
             }
             try
             {
-                OpenOrCloseDriver("open");
                 ds = _driver.Excute();
             }
             catch (Exception ex)
@@ -93,12 +87,13 @@ namespace DBAccess
                     _tran.Rollback();
                     _tran = null;
                 }
-
+                _driver.Close();
                 throw new Exception($" 執行 {sql} 發生錯誤 | 錯誤原因: " + Environment.NewLine + ex);
             }
             finally
             {
-                OpenOrCloseDriver("close");
+                _driver.Command.Parameters.Clear();
+                _driver.Command.Dispose();
             }
             return ds;
         }
@@ -125,7 +120,6 @@ namespace DBAccess
             }
             try
             {
-                OpenOrCloseDriver("open");
                 count = _driver.ExcuteNonQuery();
             }
             catch (Exception ex)
@@ -135,12 +129,13 @@ namespace DBAccess
                     _tran.Rollback();
                     _tran = null;
                 }
-
+                _driver.Close();
                 throw new Exception($" 執行 {sql} 發生錯誤 | 錯誤原因: " + Environment.NewLine + ex);
             }
             finally
             {
-                OpenOrCloseDriver("close");
+                _driver.Command.Parameters.Clear();
+                _driver.Command.Dispose();
             }
 
             return count;
@@ -148,7 +143,6 @@ namespace DBAccess
 
         /// <summary>
         /// 使用 ExcuteReader()存取資料庫
-        /// 注意: 要手動使用 dr.Close(); 關閉原先的Connection
         /// </summary>
         public IDataReader ExcuteReader(string sql, CommandType commandType, SqlParameter[] parameters)
         {
@@ -168,7 +162,6 @@ namespace DBAccess
             }
             try
             {
-                OpenOrCloseDriver("open");
                 reader = _driver.ExcuteReader();
             }
             catch (Exception ex)
@@ -178,39 +171,19 @@ namespace DBAccess
                     _tran.Rollback();
                     _tran = null;
                 }
-
+                _driver.Close();
                 throw new Exception($" 執行 {sql} 發生錯誤 | 錯誤原因: " + Environment.NewLine + ex);
             }
             finally
             {
-                // DataReader 物件在這裡不Close() 要手動使用
-                // => dr.Close() 才會連同connection一同關閉
+                _driver.Command.Parameters.Clear();
+                _driver.Command.Dispose();
             }
 
             return reader;
         }
 
 
-
-        private void OpenOrCloseDriver(string method = "open")
-        {
-            if (!IsOnTransaction())
-            {
-                if (method == "open")
-                    _driver.Open();
-                else if (method == "close")
-                {
-                    ClearAndCloseDriver();
-                }
-            }
-        }
-        private void ClearAndCloseDriver()
-        {
-            _driver.Command.Parameters.Clear();
-            _driver.Command.Dispose();
-            _driver.Command = null;
-            _driver.Close();
-        }
         private bool IsOnTransaction()
         {
             if (_tran == null)
@@ -219,6 +192,33 @@ namespace DBAccess
             }
             return true;
         }
+
+
+        #region 解構子
+        ~DbEngineAdapter()
+        {
+            Dispose(false);
+        }
+
+        bool _disposed;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+            if (disposing)
+            {
+                _driver.Close();
+                _driver = null;
+            }
+            _disposed = true;
+        }
+        #endregion
+
+
     }
 
 
