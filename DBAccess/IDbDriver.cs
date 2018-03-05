@@ -12,7 +12,7 @@ namespace DBAccess
 
         //開啟/關閉 Connection
         void Open() ;
-        void Close();
+        void Dipose();
         /// <summary>
         /// 使用 DataAdapter 存取資料庫
         /// </summary>

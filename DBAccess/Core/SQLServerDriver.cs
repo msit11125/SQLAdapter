@@ -56,7 +56,7 @@ namespace DBAccess.Core
         {
             this.Connection.Open();
         }
-        public void Close()
+        public void Dipose()
         {
             this.Connection.Close();
         }

@@ -37,14 +37,11 @@ namespace DBAccess
         }
 
 
-        public void OpenConn()
+        public void Open()
         {
             _driver.Open();
         }
-        public void CloseConn()
-        {
-            _driver.Close();
-        }
+
 
         public void BeginTransaction()
         {
@@ -87,7 +84,7 @@ namespace DBAccess
                     _tran.Rollback();
                     _tran = null;
                 }
-                _driver.Close();
+                _driver.Dipose();
                 throw new Exception($" 執行 {sql} 發生錯誤 | 錯誤原因: " + Environment.NewLine + ex);
             }
             finally
@@ -129,7 +126,7 @@ namespace DBAccess
                     _tran.Rollback();
                     _tran = null;
                 }
-                _driver.Close();
+                _driver.Dipose();
                 throw new Exception($" 執行 {sql} 發生錯誤 | 錯誤原因: " + Environment.NewLine + ex);
             }
             finally
@@ -171,7 +168,7 @@ namespace DBAccess
                     _tran.Rollback();
                     _tran = null;
                 }
-                _driver.Close();
+                _driver.Dipose();
                 throw new Exception($" 執行 {sql} 發生錯誤 | 錯誤原因: " + Environment.NewLine + ex);
             }
             finally
@@ -211,7 +208,7 @@ namespace DBAccess
             if (_disposed) return;
             if (disposing)
             {
-                _driver.Close();
+                _driver.Dipose();
                 _driver = null;
             }
             _disposed = true;

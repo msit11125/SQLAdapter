@@ -102,13 +102,13 @@ namespace SQLServerAccessDemo.Controllers
             SqlParameter[] pArrar = builder.ToArray();
 
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
-            db.OpenConn(); //開啟連線
+            db.Open(); //開啟連線
             var ds = db.Excute(
                 resource.Sql,
                 resource.CommandType,
                 pArrar
             );
-            db.CloseConn(); //關閉連線
+            db.Dispose(); //關閉連線
 
             // *** 步驟(4) (非必要) 可將SqlParameter轉Class
             //                     或是DataSet內的Table轉List<>
@@ -168,7 +168,7 @@ namespace SQLServerAccessDemo.Controllers
             // *** 步驟(1) 建立SQL Server 的 Adapter
             DbEngineAdapter db = new DbEngineAdapter(connectString);
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
-            db.OpenConn();
+            db.Open();
             var ds = db.Excute(
                 @"
                   SELECT name FROM master.dbo.sysdatabases 
@@ -177,7 +177,7 @@ namespace SQLServerAccessDemo.Controllers
                 CommandType.Text,
                 null
             );
-            db.CloseConn();
+            db.Dispose(); //關閉連線
 
             var nameList = ds.Tables[0].ToList<Names>();
 
@@ -204,7 +204,7 @@ namespace SQLServerAccessDemo.Controllers
                 null
             );
 
-            db.OpenConn();
+            db.Open();
             var dsView = db.Excute(
                 $"SELECT (TABLE_NAME) AS name FROM {dbName}.INFORMATION_SCHEMA.VIEWS ORDER BY TABLE_NAME",
                 CommandType.Text,
@@ -222,7 +222,7 @@ namespace SQLServerAccessDemo.Controllers
                 CommandType.Text,
                 null
             );
-            db.CloseConn();
+            db.Dispose(); //關閉連線
 
 
             // *** 步驟(4) 轉成List
@@ -257,7 +257,7 @@ namespace SQLServerAccessDemo.Controllers
             SqlParameter[] pArray = builder.ToArray();
 
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
-            db.OpenConn();
+            db.Open();
             var ds = db.Excute(
                    $@" 
                     SELECT 
@@ -274,7 +274,7 @@ namespace SQLServerAccessDemo.Controllers
                    CommandType.Text,
                    pArray
                );
-            db.CloseConn();
+            db.Dispose(); //關閉連線
 
             // *** 步驟(4) 轉成List
             var pList = ds.Tables[0].ToList<ParameterAndType>();
@@ -302,7 +302,7 @@ namespace SQLServerAccessDemo.Controllers
             SqlParameter[] pArray = builder.ToArray();
             // *** 步驟(3) 執行 SQL 敘述 => 丟入 Sql 或 預存程序名稱 、 CommandType 、 SqlParameter[]
             DataSet ds = null;
-            db.OpenConn();
+            db.Open();
             switch (type)
             {
                 case 'P': //SP
@@ -329,7 +329,7 @@ namespace SQLServerAccessDemo.Controllers
                     );
                     break;
             }
-            db.CloseConn();
+            db.Dispose(); //關閉連線
 
             string codes = "<span style='color:red'>查無資料</span>";
             if (ds != null && ds.Tables[0].Rows.Count > 0)
